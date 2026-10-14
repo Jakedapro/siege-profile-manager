@@ -61,7 +61,7 @@ public sealed class DbwinListener : IDisposable
 }
 
 /// <summary>
-/// Global keys: F7 window, F9 HUD, F10-F12 coach, and the 1 / 2 weapon keys that drive the Lua's slot sync (Scroll Lock).
+/// Global keys: F7 window, F9 HUD, F6 copy log, F12 pause/resume learning, and the 1 / 2 weapon keys that drive the Lua's slot sync (Scroll Lock).
 /// The hook lives on its own thread and its callback only records the key and queues it: Windows waits for a low-level
 /// hook before delivering the key to anything, so any slow work in it (foreground check, sending Scroll Lock) lags the
 /// whole keyboard. A worker thread does that work.
@@ -96,8 +96,8 @@ public sealed class HookService : IDisposable, IMoveKeys
     public event Action? SlotChanged;
     public event Action? ToggleTraining;     // F12
     public event Action? CopyLog;            // F6
-    public event Action? CalBegin;           // F11
-    public event Action? CalFinish;          // F10
+    public event Action? CalBegin;           // button only
+    public event Action? CalFinish;          // button only
 
     public HookService(ConfigStore store)
     {
@@ -155,7 +155,7 @@ public sealed class HookService : IDisposable, IMoveKeys
                     if (down)
                     {
                         if (vk == Native.VK_SCROLL) _lockOn = !_lockOn;                 // you pressed the real Scroll Lock key
-                        else if (vk is 0x76 or 0x75 or 0x78 or 0x79 or 0x7A or 0x7B or 0x31 or 0x32) _queue.TryAdd(vk);
+                        else if (vk is 0x76 or 0x75 or 0x78 or 0x7B or 0x31 or 0x32) _queue.TryAdd(vk);
                     }
                 }
             }
@@ -181,8 +181,6 @@ public sealed class HookService : IDisposable, IMoveKeys
                     case 0x76: Post(ToggleWindow); break;                               // F7
                     case 0x75: Post(CopyLog); break;                                    // F6
                     case 0x78: Post(ToggleHud); break;                                  // F9
-                    case 0x79: Post(CalFinish); break;                                  // F10
-                    case 0x7A: Post(CalBegin); break;                                   // F11
                     case 0x7B: Post(ToggleTraining); break;                             // F12
                     case 0x31:
                     case 0x32:

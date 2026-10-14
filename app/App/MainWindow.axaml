@@ -111,8 +111,8 @@
               <TextBlock Name="CalWarn" Foreground="#F2B84B" FontWeight="SemiBold" TextWrapping="Wrap" IsVisible="False" Text="⚠ Learning starts once this is calibrated. It measures itself while you look around in game, or press the button to do it right now." />
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button Name="CalGuidedBtn" Classes="primary" Content="Calibrate now  (6 s countdown)" />
-                <Button Name="CalBeginBtn" Classes="sec" Content="Manual: Start  (F11)" />
-                <Button Name="CalFinishBtn" Classes="sec" Content="Finish  (F10)" />
+                <Button Name="CalBeginBtn" Classes="sec" Content="Manual: Start" />
+                <Button Name="CalFinishBtn" Classes="sec" Content="Manual: Finish" />
               </StackPanel>
               <TextBlock Text="Press Calibrate now: this window hides, a countdown shows on the HUD. Switch to Siege, aim at a textured wall holding aim, then move your mouse slowly down 1-2 cm when it says MOVE. It measures by itself. It only reads your mouse, it never moves it." Classes="dim" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>

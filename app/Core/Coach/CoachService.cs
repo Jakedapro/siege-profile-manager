@@ -301,7 +301,7 @@ public sealed class CoachService
         if (f == null) return "screen capture failed";
         _calA = (Environment.TickCount64, f);
         Raw.BeginCapture();
-        Status = "Calibrating: aim at a textured wall, hold aim, move the mouse slowly down 1-2 cm, then press the finish key (F10)";
+        Status = "Calibrating: aim at a textured wall, hold aim, move the mouse slowly down 1-2 cm, then press Manual: Finish on the Coach page (or just use Calibrate now)";
         Changed?.Invoke();
         return "";
     }
