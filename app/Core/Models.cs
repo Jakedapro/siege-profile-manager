@@ -102,7 +102,8 @@ public sealed class GameSettings
     public double Fov { get; set; } = 84;
     public double Ads { get; set; } = 52;
     /// <summary>Pull strength for every gun that has no learned profile (the Lua's vertGain).</summary>
-    public double PullGain { get; set; } = 1.4;
+    public double PullGain { get; set; } = 1.0;
+    public int PullGainVersion { get; set; }          // 2 = the old 1.4 boost has been reset once
     public int ResW { get; set; } = 1920;
     public int ResH { get; set; } = 1080;
 }

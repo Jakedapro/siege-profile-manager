@@ -79,6 +79,7 @@ public sealed class ConfigStore : IDisposable
 
     void Normalize()
     {
+        if (Config.Game.PullGainVersion < 2) { Config.Game.PullGain = 1.0; Config.Game.PullGainVersion = 2; }     // guns without a learned profile were 40% too strong
         if (Config.Side != "defenders") Config.Side = "attackers";
         if (Config.Game.ResW < 640 || Config.Game.ResH < 480) { Config.Game.ResW = 1920; Config.Game.ResH = 1080; }
         if (Config.Game.Dpi <= 0) Config.Game.Dpi = 1600;
