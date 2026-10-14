@@ -116,8 +116,8 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
         // learning: three sprays with the same error -> a stronger early pull, bounded and saved as a learned profile
         var cfg = new AppConfig();
         LearnedProfile? lp = null; string msg = "";
-        for (int i = 0; i < 3; i++) lp = SPM.Core.Coach.CoachBook.Record(cfg, res, out msg);
-        Check(lp != null && lp.R > pulls.A && lp.R <= pulls.A * 1.5, $"learned profile pulls harder, within bounds (r={lp?.R}) {msg}");
+        for (int i = 0; i < 3; i++) lp = SPM.Core.Coach.CoachBook.Record(cfg, res, out msg) ?? lp;
+        Check(lp != null && lp.R > pulls.A && lp.R <= pulls.A * 2.5, $"learned profile pulls harder, within bounds (r={lp?.R}) {msg}");
         Check(cfg.Learned.ContainsKey(res.Key), "learned profile stored for the loadout");
         // accurate sprays lock the profile
         var cfg2 = new AppConfig();

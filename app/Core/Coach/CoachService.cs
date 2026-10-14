@@ -219,7 +219,7 @@ public sealed class CoachService
     {
         Measured++;
         LastResult = r;
-        var lp = Matching ? CoachBook.Record(C, r, out var msg, 5, 0.35) : CoachBook.Record(C, r, out msg);
+        var lp = Matching ? CoachBook.Record(C, r, out var msg, 3, 0.5) : CoachBook.Record(C, r, out msg);
         _store.Touch();
         Last = (Matching ? "match: " : "") + $"EARLY {CoachMath.Say(r.Early, r.Pa)}  ·  MID {CoachMath.Say(r.Mid, r.Pb)}  ·  LATE {CoachMath.Say(r.Late, r.Pc)}  ·  sideways "
              + (Math.Abs(r.Sideways) < 0.08 ? "ok" : "drifts " + (r.Sideways < 0 ? "RIGHT" : "LEFT"))

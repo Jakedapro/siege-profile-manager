@@ -110,10 +110,10 @@ public static class CoachMath
 /// <summary>Per-loadout learning: collects sprays, proposes a better profile every few sprays, locks it once accurate.</summary>
 public static class CoachBook
 {
-    public const double Eta = 0.5;                  // fraction of the measured error corrected per proposal
-    public const int Needed = 3;                    // sprays on the same profile before a proposal
+    public const double Eta = 0.6;                  // fraction of the measured error corrected per proposal
+    public const int Needed = 2;                    // sprays on the same profile before a proposal
 
-    static double Bound(double v, double b) => CoachMath.Clamp(v, b > 0.3 ? b * 0.6 : 0, b > 0.3 ? b * 1.5 : 6);
+    static double Bound(double v, double b) => CoachMath.Clamp(v, b > 0.3 ? b * 0.35 : 0, b > 0.3 ? b * 2.5 : 6);
 
     public static CoachEntry Entry(AppConfig c, string key)
     {
@@ -139,7 +139,11 @@ public static class CoachBook
         e.Updated = DateTime.Now.ToString("MM-dd HH:mm");
         e.Acc.Add((int)Math.Round(r.Accuracy));
         while (e.Acc.Count > 60) e.Acc.RemoveAt(0);
-        if (e.N < needed) { msg = $"{e.N} of {needed} sprays collected for this profile"; return null; }
+        double rel1 = Math.Max(Math.Abs(e.A / e.N) / Math.Max(e.Pa, 0.5), Math.Max(Math.Abs(e.B / e.N) / Math.Max(e.Pb, 0.5), Math.Abs(e.C / e.N) / Math.Max(e.Pc, 0.5)));
+        // a clearly wrong profile is corrected after ONE good spray (small step); the normal rounds follow as sprays come in
+        bool quick = e.N == 1 && rel1 > 0.3 && r.UsedIntervals >= 4;
+        if (e.N < needed && !quick) { msg = $"{e.N} of {needed} sprays collected for this profile"; return null; }
+        if (quick) eta = Math.Min(eta, 0.4); else if (rel1 > 0.25) eta = Math.Max(eta, 0.8);      // big error: big step, small error: careful
 
         // LOCKED: under 4% error in every phase and tiny sideways drift = accurate, stop chasing noise
         double rel = Math.Max(Math.Abs(e.A / e.N) / Math.Max(e.Pa, 0.5), Math.Max(Math.Abs(e.B / e.N) / Math.Max(e.Pb, 0.5), Math.Abs(e.C / e.N) / Math.Max(e.Pc, 0.5)));

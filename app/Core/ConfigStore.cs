@@ -6,7 +6,17 @@ namespace SPM.Core;
 /// <summary>Loads and saves the app config (debounced), and imports the old AutoHotkey config once.</summary>
 [System.Text.Json.Serialization.JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = System.Text.Json.Serialization.JsonKnownNamingPolicy.CamelCase)]
 [System.Text.Json.Serialization.JsonSerializable(typeof(AppConfig))]
+[System.Text.Json.Serialization.JsonSerializable(typeof(LearnedFile))]
 internal partial class ConfigJson : System.Text.Json.Serialization.JsonSerializerContext { }
+
+/// <summary>The coach's memory on its own, in a second file: it survives a lost, reset or replaced app-config.json.</summary>
+public sealed class LearnedFile
+{
+    public Dictionary<string, LearnedProfile> Learned { get; set; } = new();
+    public Dictionary<string, CoachEntry> Hist { get; set; } = new();
+    public double PxY { get; set; }
+    public double PxX { get; set; }
+}
 
 public sealed class ConfigStore : IDisposable
 {
@@ -52,6 +62,7 @@ public sealed class ConfigStore : IDisposable
             Config = RestoreBackup() ?? new AppConfig();
             LastError = "config unreadable (" + e.Message + "), " + (Config.Learned.Count > 0 || Config.Saved.Count > 0 ? "restored your latest backup" : "using defaults");
         }
+        RestoreLearned();
         SeedStandard();
         Normalize();
         Touch();
@@ -98,10 +109,28 @@ public sealed class ConfigStore : IDisposable
                 File.Move(tmp, FilePath, true);
                 LastError = "";
                 Backup();
+                File.WriteAllText(LearnedPath, JsonSerializer.Serialize(new LearnedFile { Learned = Config.Learned, Hist = Config.Coach.Hist, PxY = Config.Coach.PxY, PxX = Config.Coach.PxX }, ConfigJson.Default.LearnedFile));
             }
             catch (Exception e) { LastError = "save failed: " + e.Message; return; }
         }
         Saved?.Invoke();
+    }
+
+    string LearnedPath => Path.Combine(Dir, "learned.json");
+
+    /// <summary>Anything learned.json knows that the config does not (new config, lost file, old backup) is added back.</summary>
+    void RestoreLearned()
+    {
+        try
+        {
+            if (!File.Exists(LearnedPath)) return;
+            var f = JsonSerializer.Deserialize(File.ReadAllText(LearnedPath), ConfigJson.Default.LearnedFile);
+            if (f == null) return;
+            foreach (var kv in f.Learned) if (!Config.Learned.ContainsKey(kv.Key)) Config.Learned[kv.Key] = kv.Value;
+            foreach (var kv in f.Hist) if (!Config.Coach.Hist.ContainsKey(kv.Key)) Config.Coach.Hist[kv.Key] = kv.Value;
+            if (Config.Coach.PxY <= 0 && f.PxY > 0) { Config.Coach.PxY = f.PxY; Config.Coach.PxX = f.PxX; }
+        }
+        catch { }
     }
 
     DateTime _lastBackup = DateTime.MinValue;
