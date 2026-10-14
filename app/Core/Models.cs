@@ -90,6 +90,7 @@ public sealed class CoachSettings
 {
     public double PxY { get; set; }          // screen pixels the view moves per mouse count, vertical (0 = not calibrated)
     public double PxX { get; set; }
+    public bool TrainingOff { get; set; }     // learning is ON by default; only a deliberate F12 turns it off
     public Dictionary<string, CoachEntry> Hist { get; set; } = new();
 }
 

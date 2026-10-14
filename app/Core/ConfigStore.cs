@@ -48,9 +48,9 @@ public sealed class ConfigStore : IDisposable
         }
         catch (Exception e)
         {
-            LastError = "config unreadable (" + e.Message + "), using defaults";
             try { File.Copy(FilePath, FilePath + ".damaged", true); } catch { }
-            Config = new AppConfig();
+            Config = RestoreBackup() ?? new AppConfig();
+            LastError = "config unreadable (" + e.Message + "), " + (Config.Learned.Count > 0 || Config.Saved.Count > 0 ? "restored your latest backup" : "using defaults");
         }
         SeedStandard();
         Normalize();
@@ -97,10 +97,43 @@ public sealed class ConfigStore : IDisposable
                 if (File.Exists(FilePath)) File.Copy(FilePath, FilePath + ".bak", true);
                 File.Move(tmp, FilePath, true);
                 LastError = "";
+                Backup();
             }
             catch (Exception e) { LastError = "save failed: " + e.Message; return; }
         }
         Saved?.Invoke();
+    }
+
+    DateTime _lastBackup = DateTime.MinValue;
+    string BackupDir => Path.Combine(Dir, "backups");
+
+    /// <summary>A timestamped copy of the config at most every 20 minutes (last 30 kept), so learning can never be lost to one bad write.</summary>
+    void Backup()
+    {
+        try
+        {
+            if ((DateTime.Now - _lastBackup).TotalMinutes < 20 || !File.Exists(FilePath)) return;
+            Directory.CreateDirectory(BackupDir);
+            File.Copy(FilePath, Path.Combine(BackupDir, "app-config-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json"), true);
+            _lastBackup = DateTime.Now;
+            foreach (var old in Directory.GetFiles(BackupDir, "app-config-*.json").OrderByDescending(f => f).Skip(30)) File.Delete(old);
+        }
+        catch { }
+    }
+
+    AppConfig? RestoreBackup()
+    {
+        try
+        {
+            var files = (Directory.Exists(BackupDir) ? Directory.GetFiles(BackupDir, "app-config-*.json") : Array.Empty<string>()).OrderByDescending(f => f).ToList();
+            files.Insert(0, FilePath + ".bak");
+            foreach (var f in files)
+            {
+                try { if (File.Exists(f)) { var c = JsonSerializer.Deserialize(File.ReadAllText(f), ConfigJson.Default.AppConfig); if (c != null) return c; } } catch { }
+            }
+        }
+        catch { }
+        return null;
     }
 
     public void Dispose() { lock (_gate) { _timer?.Dispose(); _timer = null; } SaveNow(); }

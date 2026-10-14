@@ -41,7 +41,10 @@ public static class Report
         t.Append(Row("RESOLUTION", $"{cfg.Game.ResW} x {cfg.Game.ResH}   dpi {cfg.Game.Dpi}   sens {cfg.Game.SensH}/{cfg.Game.SensV}"));
         t.Append(Row("SAVED LOADOUTS", cfg.Saved.Count + " operators, " + cfg.Favorites.Count + " favourites, " + cfg.Learned.Count + " learned profiles"));
         t.Append(Row("CALIBRATION GRIDS", string.Join(", ", cfg.Calibration.Keys.DefaultIfEmpty("none"))));
-        t.Append(Row("COACH", (app.Coach.Training ? "TRAINING ON" : "training off") + $"  measured {app.Coach.Measured}, skipped {app.Coach.Skipped}"));
+        t.Append(Row("COACH", (app.Coach.Training ? "ALWAYS LEARNING" : "training off") + $"  measured {app.Coach.Measured}, ignored taps {app.Coach.Ignored}, skipped {app.Coach.Skipped}"));
+        if (app.Coach.SkipSummary() != "") t.Append(Row("  SKIP REASONS", app.Coach.SkipSummary()));
+        if (!app.Coach.Calibrated && app.Coach.AutoCalStatus != "") t.Append(Row("  AUTO CALIBRATION", app.Coach.AutoCalStatus));
+        t.Append(Row("  LEARNED", string.Join(", ", cfg.Coach.Hist.OrderBy(k => k.Key).Select(k => $"{k.Key} n={k.Value.Acc.Count} last={(k.Value.Acc.Count > 0 ? k.Value.Acc[^1] : 0)}%{(k.Value.Locked ? " LOCKED" : "")}"))));
         t.Append(Row("  LAST", app.Coach.Last));
         t.Append(Row("  STATUS", app.Coach.Status));
         t.Append(Row("  PX PER COUNT", app.Coach.Calibrated ? $"vertical {cfg.Coach.PxY}, horizontal {cfg.Coach.PxX}" : "not calibrated (assuming 0.4)"));

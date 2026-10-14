@@ -28,7 +28,7 @@ public partial class MainWindow : Window
         C<Button>("QuitBtn").Click += (_, _) => _app.Quit();
         C<Button>("CopyBtn").Click += async (_, _) => await CopyScript();
         C<Button>("FolderBtn").Click += (_, _) => OpenFolder(_app.Sync.MergedPath, true);
-        C<Button>("CopyReportBtn").Click += async (_, _) => await SetClipboard(Report.Build(_app));
+        C<Button>("CopyReportBtn").Click += async (_, _) => await CopyLogAsync();
         C<Button>("DataFolderBtn").Click += (_, _) => OpenFolder(_app.Store.Dir, false);
         C<Button>("BrowseBtn").Click += async (_, _) => await Browse();
         C<Button>("UpdCheckBtn").Click += async (_, _) => await CheckUpdate();
@@ -128,6 +128,17 @@ public partial class MainWindow : Window
         if (p == null) return;
         C<TextBox>("LuaPathBox").Text = p;
         SetLuaPath(p);
+    }
+
+    /// <summary>F6 or the button: the whole report plus the coach's own log goes to the clipboard and is saved next to the config.</summary>
+    public void CopyLogNow() => _ = CopyLogAsync();
+
+    async Task CopyLogAsync()
+    {
+        string text = Report.Build(_app) + "\nCOACH LOG (last 150 lines of " + SPM.Core.Coach.CoachLog.Path + ")\n" + SPM.Core.Coach.CoachLog.Tail(150) + "\n";
+        try { File.WriteAllText(Path.Combine(_app.Store.Dir, "last-report.txt"), text); } catch { }
+        await SetClipboard(text);
+        _app.Coach.Announce("LOG COPIED to the clipboard: paste it into the chat");
     }
 
     async Task SetClipboard(string text)

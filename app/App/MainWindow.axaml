@@ -94,7 +94,7 @@
           <TextBlock Text="Coach" FontSize="22" FontWeight="SemiBold" Foreground="#E9EDF3" Margin="0,0,0,16" />
           <Border Classes="card">
             <StackPanel Spacing="8">
-              <TextBlock Text="TRAINING  (shooting range only)" Classes="h" />
+              <TextBlock Text="LEARNING  (always on: range and matches)" Classes="h" />
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button Name="TrainBtn" Classes="primary" Content="Start training  (F12)" />
                 <TextBlock Name="TrainText" VerticalAlignment="Center" Foreground="#E9EDF3" />
@@ -108,7 +108,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="SCREEN SCALE  (pixels the view moves per mouse count)" Classes="h" />
               <TextBlock Name="PxText" Foreground="#E9EDF3" TextWrapping="Wrap" />
-              <TextBlock Name="CalWarn" Foreground="#F2B84B" FontWeight="SemiBold" TextWrapping="Wrap" IsVisible="False" Text="⚠ Match learning is waiting for this calibration. Until you do it, the coach ignores your match sprays." />
+              <TextBlock Name="CalWarn" Foreground="#F2B84B" FontWeight="SemiBold" TextWrapping="Wrap" IsVisible="False" Text="⚠ Learning starts once this is calibrated. It measures itself while you look around in game, or press the button to do it right now." />
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button Name="CalGuidedBtn" Classes="primary" Content="Calibrate now  (6 s countdown)" />
                 <Button Name="CalBeginBtn" Classes="sec" Content="Manual: Start  (F11)" />
@@ -207,7 +207,7 @@
         <TextBlock Text="Diagnostics" FontSize="22" FontWeight="SemiBold" Foreground="#E9EDF3" Margin="0,0,0,16" />
         <TextBox Name="ReportBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas,Courier New,monospace" FontSize="12" TextWrapping="NoWrap" />
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,12,0,0">
-          <Button Name="CopyReportBtn" Classes="primary" Content="Copy report" />
+          <Button Name="CopyReportBtn" Classes="primary" Content="Copy log  (F6)" />
           <Button Name="DataFolderBtn" Classes="sec" Content="Open data folder" />
         </StackPanel>
       </Grid>

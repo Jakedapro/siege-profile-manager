@@ -171,6 +171,29 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
     Check(with != null && Math.Abs(with.Early) < 0.1 && Math.Abs(with.Mid) < 0.1, $"your own mouse movement is subtracted (early {with?.Early:0.00}, mid {with?.Mid:0.00}) {w2}");
 }
 
+// ---- learning carries over to other attachments of the same weapon ----
+{
+    var c2 = new AppConfig();
+    c2.Learned["SMG-12:nil:nil"] = new LearnedProfile { R = 10, Y1 = 2, Y2 = 1, Side = 0.3 };
+    var all = SPM.Core.Derived.All(c2).ToDictionary(k => k.Key, k => k.Value);
+    Check(all.ContainsKey("SMG-12:nil:nil") && all["SMG-12:nil:nil"].R == 10, "own learned profile is kept as it is");
+    Check(all.ContainsKey("SMG-12:nil:VERTICAL") && Math.Abs(all["SMG-12:nil:VERTICAL"].R - 8) < 0.01, $"vertical grip derives from it x0.8 ({all.GetValueOrDefault("SMG-12:nil:VERTICAL")?.R})");
+    c2.Learned["SMG-12:nil:VERTICAL"] = new LearnedProfile { R = 7 };
+    var all2 = SPM.Core.Derived.All(c2).ToDictionary(k => k.Key, k => k.Value);
+    Check(all2["SMG-12:nil:VERTICAL"].R == 7, "a combination with its own learning is not overwritten");
+    string blockText = SPM.Core.LuaBlock.Build(c2, "r1");
+    Check(blockText.Contains("[\"SMG-12:nil:nil\"]"), "derived and learned keys are written to the Lua block");
+}
+// ---- recent sprays count more: a long-locked profile reacts to a new error ----
+{
+    var c3 = new AppConfig();
+    SPM.Core.Coach.SprayResult R(double e) => new() { Key = "X:nil:nil", Early = e, Mid = e, Late = e, Pa = 10, Pb = 12, Pc = 14, Px = 0, T1 = 450, T2 = 900, Accuracy = 90 };
+    for (int i = 0; i < 20; i++) SPM.Core.Coach.CoachBook.Record(c3, R(0), out _);
+    LearnedProfile? lp = null;
+    for (int i = 0; i < 4; i++) lp = SPM.Core.Coach.CoachBook.Record(c3, R(2.0), out _) ?? lp;
+    Check(lp != null, "after 20 perfect sprays, four bad ones still change the profile");
+}
+
 store.Dispose();
 Console.WriteLine(fails == 0 ? "ALL PASSED" : fails + " FAILED");
 return fails == 0 ? 0 : 1;

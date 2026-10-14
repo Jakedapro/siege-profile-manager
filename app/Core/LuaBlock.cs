@@ -97,7 +97,7 @@ public static class LuaBlock
         }
         t.Append("    },\n");
         t.Append("    recoil = {\n");
-        foreach (var kv in c.Learned.OrderBy(k => k.Key, o))
+        foreach (var kv in Derived.All(c).OrderBy(k => k.Key, o))
         {
             var p = kv.Value;
             t.Append($"        [{Q(kv.Key)}] = {{ r = {N(p.R)}, y1 = {N(p.Y1)}, y2 = {N(p.Y2)}, tym1 = {N(p.Tym1)}, tym2 = {N(p.Tym2)}, side = {N(p.Side)}, strength = {N(p.Strength)}, late = {N(p.Late)} }},\n");

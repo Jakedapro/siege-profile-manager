@@ -95,6 +95,7 @@ public sealed class HookService : IDisposable, IMoveKeys
 
     public event Action? SlotChanged;
     public event Action? ToggleTraining;     // F12
+    public event Action? CopyLog;            // F6
     public event Action? CalBegin;           // F11
     public event Action? CalFinish;          // F10
 
@@ -154,7 +155,7 @@ public sealed class HookService : IDisposable, IMoveKeys
                     if (down)
                     {
                         if (vk == Native.VK_SCROLL) _lockOn = !_lockOn;                 // you pressed the real Scroll Lock key
-                        else if (vk is 0x76 or 0x78 or 0x79 or 0x7A or 0x7B or 0x31 or 0x32) _queue.TryAdd(vk);
+                        else if (vk is 0x76 or 0x75 or 0x78 or 0x79 or 0x7A or 0x7B or 0x31 or 0x32) _queue.TryAdd(vk);
                     }
                 }
             }
@@ -178,6 +179,7 @@ public sealed class HookService : IDisposable, IMoveKeys
                 switch (vk)
                 {
                     case 0x76: Post(ToggleWindow); break;                               // F7
+                    case 0x75: Post(CopyLog); break;                                    // F6
                     case 0x78: Post(ToggleHud); break;                                  // F9
                     case 0x79: Post(CalFinish); break;                                  // F10
                     case 0x7A: Post(CalBegin); break;                                   // F11

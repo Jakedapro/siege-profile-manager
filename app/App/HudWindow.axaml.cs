@@ -55,8 +55,8 @@ public partial class HudWindow : Window
         C<TextBlock>("Status").Text = _app.Sync.StateText();
         var coach = C<TextBlock>("CoachLine");
         bool notice = _app.Coach.NoticeActive;
-        bool show = _app.Coach.Training || _app.Coach.Calibrating || notice;   // match learning stays quiet: no HUD clutter while you play
+        bool show = _app.Coach.Calibrating || notice;   // match learning stays quiet: no HUD clutter while you play
         coach.IsVisible = show;
-        if (show) coach.Text = notice ? _app.Coach.Notice : (_app.Coach.Calibrating ? "CALIBRATING: " : "TRAINING: ") + (_app.Coach.Calibrating ? _app.Coach.Status : _app.Coach.Last);
+        if (show) coach.Text = notice ? _app.Coach.Notice : "CALIBRATING: " + _app.Coach.Status;
     }
 }

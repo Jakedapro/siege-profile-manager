@@ -170,13 +170,13 @@ public partial class MainWindow
     {
         var co = _app.Coach; var cfg = _app.Store.Config;
         _loading = true; C<CheckBox>("MatchChk").IsChecked = co.InMatch; _loading = false;
-        C<Button>("TrainBtn").Content = co.Training ? "Stop training  (F12)" : "Start training  (F12)";
-        C<TextBlock>("TrainText").Text = co.Training ? "● TRAINING ON" : co.InMatch ? "○ range training off  ·  learning carefully in matches" : "○ off";
-        C<TextBlock>("CoachStatus").Text = co.Status;
+        C<Button>("TrainBtn").Content = co.Training ? "Pause learning  (F12)" : "Resume learning  (F12)";
+        C<TextBlock>("TrainText").Text = co.Training ? "● ALWAYS LEARNING  ·  range and matches" : co.InMatch ? "○ range learning paused  ·  learning carefully in matches" : "○ paused";
+        C<TextBlock>("CoachStatus").Text = co.Status + (co.SkipSummary() != "" ? "\nnot used so far: " + co.SkipSummary() : "") + (co.Ignored > 0 ? $"\ntaps / hip-fire ignored: {co.Ignored}" : "");
         C<TextBlock>("PxText").Text = co.Calibrated
             ? $"vertical {cfg.Coach.PxY:0.000} px per count   ·   horizontal {cfg.Coach.PxX:0.000}   (calibrated)"
-            : "not calibrated: assuming 0.40 px per count. Calibrating makes the corrections accurate.";
-        C<TextBlock>("CalWarn").IsVisible = co.NeedsCalibration;
+            : "not calibrated yet. " + (co.AutoCalStatus != "" ? co.AutoCalStatus : "It measures itself: just look around with the mouse in game.");
+        C<TextBlock>("CalWarn").IsVisible = !co.Calibrated;
         C<Button>("CalGuidedBtn").IsEnabled = !co.GuidedRunning;
         C<TextBlock>("LastText").Text = co.Last;
         var r = co.LastResult;

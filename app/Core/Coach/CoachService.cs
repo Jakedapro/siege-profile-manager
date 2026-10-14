@@ -55,6 +55,9 @@ public sealed class CoachService
     public SprayResult? LastResult { get; private set; }
     public int Measured { get; private set; }
     public int Skipped { get; private set; }
+    public int Ignored { get; private set; }                    // taps / hip-fire / too-short bursts: nothing to learn, not an error
+    public Dictionary<string, int> SkipReasons { get; } = new();
+    public string AutoCalStatus { get; private set; } = "";
     public event Action? Changed;
 
     /// <summary>A short message for the HUD (calibration prompts, results). Shown for 10 seconds.</summary>
@@ -63,12 +66,16 @@ public sealed class CoachService
     public bool NoticeActive => Notice != "" && (DateTime.UtcNow - _noticeAt).TotalSeconds < 10;
     public bool NeedsCalibration => InMatch && !Calibrated;
     public bool GuidedRunning { get; private set; }
+    public void Announce(string text) => SetNotice(text);
     void SetNotice(string text) { Notice = text; _noticeAt = DateTime.UtcNow; Changed?.Invoke(); }
 
     public CoachService(ConfigStore store, LiveState live)
     {
         _store = store; _live = live;
         _ui = SynchronizationContext.Current;
+        CoachLog.Path = System.IO.Path.Combine(store.Dir, "coach.log");
+        Training = !store.Config.Coach.TrainingOff;                // learning is always on unless you switched it off yourself
+        Status = Training ? "Always learning: every clean spray teaches it" : "Training is off";
         live.EventReceived += OnEvent;
     }
 
@@ -80,8 +87,9 @@ public sealed class CoachService
     public void SetTraining(bool on)
     {
         Training = on;
-        _trainUntil = on ? DateTime.UtcNow.AddMinutes(20) : DateTime.MinValue;
-        Status = on ? "Training is ON (switches itself off after 20 minutes)" : (InMatch ? "Training off: learning carefully during matches" : "Training is off");
+        C.Coach.TrainingOff = !on; _store.Touch();
+        Status = on ? "Always learning: every clean spray teaches it" : (InMatch ? "Training off: learning carefully during matches" : "Training is off");
+        CoachLog.Append("training " + (on ? "ON" : "OFF"));
         Changed?.Invoke();
     }
 
@@ -90,7 +98,6 @@ public sealed class CoachService
     /// <summary>Why the coach is not measuring right now ("" = it is).</summary>
     public string Why()
     {
-        if (Training && DateTime.UtcNow > _trainUntil) { Training = false; }
         if (!Training && !InMatch) return "Training is off and match learning is off";
         if (!_live.HasData) return "no live data from G HUB";
         if (!Allowed()) return "Siege is not the active window";
@@ -124,7 +131,7 @@ public sealed class CoachService
         Raw?.BeginBurst();
         lock (_gate) _recording = true;
         Snap();
-        int every = Matching ? 160 : 250;                       // match sprays are short: sample faster
+        int every = 160;                                         // sprays can be short: sample fast
         _timer = new System.Threading.Timer(_ => Snap(), null, every, every);
     }
 
@@ -147,8 +154,8 @@ public sealed class CoachService
         lock (_gate) { if (!_recording) return; _recording = false; frames = new(_frames); _frames.Clear(); }
         var hand = Raw?.EndBurst() ?? new List<RawSample>();
         double ms = Num(p.Get("ms")); int ticks = (int)Num(p.Get("ticks")); double py = Num(p.Get("py"));
-        if (py <= 0 || ticks < 25) { Skip("hold fire a bit longer (the macro must pull for 0.3 s or more)"); return; }
-        if (Matching && !Calibrated) { Skip("match learning needs the pixels-per-count calibration first (Coach page: F11, move the mouse slowly, F10)"); return; }
+        if (py <= 0 || ticks < 20) { Ignored++; return; }          // a tap or hip-fire: nothing to learn from, and not worth a message
+        if (!Calibrated) { Skip("waiting for the pixels-per-count calibration (it measures itself while you look around in game)"); return; }
         if (Matching && ms < 450) { Skip("match mode needs a spray of at least half a second"); return; }
         if (Keys != null && Keys.ActivitySince(_burstStart - 150)) { Skip("you were moving, crouching or leaning during that spray"); return; }
         // the Lua's profile for this loadout, as it was when the burst ended
@@ -194,10 +201,18 @@ public sealed class CoachService
     void Skip(string why)
     {
         Skipped++;
-        if (Matching && !Calibrated) return;                 // one clear banner on the Coach page instead of a message per spray
-        Last = "skipped: " + why;
-        Status = Last;
+        string r = why.Length > 70 ? why[..70] : why;
+        SkipReasons[r] = SkipReasons.TryGetValue(r, out var n) ? n + 1 : 1;
+        CoachLog.Append("skip: " + why + "  [" + Key() + "]");
+        if (!Calibrated) { Changed?.Invoke(); return; }       // one clear banner on the Coach page instead of a message per spray
+        Status = "last spray not used: " + why;               // the last measured result stays visible in LAST
         Changed?.Invoke();
+    }
+
+    public string SkipSummary()
+    {
+        if (SkipReasons.Count == 0) return "";
+        return string.Join("; ", SkipReasons.OrderByDescending(k => k.Value).Take(3).Select(k => $"{k.Value}× {k.Key}"));
     }
 
     void Apply(SprayResult r)
@@ -210,9 +225,67 @@ public sealed class CoachService
              + (Math.Abs(r.Sideways) < 0.08 ? "ok" : "drifts " + (r.Sideways < 0 ? "RIGHT" : "LEFT"))
              + $"   ({r.UsedIntervals} of {r.Intervals} clear)";
         Status = (Matching ? "[match] " : "[range] ") + msg;
-        if (lp != null) _live.AddRecent("Coach improved " + r.Key);
+        if (lp != null) { _live.AddRecent("Coach improved " + r.Key); SetNotice("COACH: learned " + r.Key + " (pull " + lp.R.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + ")"); }
+        else if (msg.StartsWith("profile LOCKED")) SetNotice("COACH: " + r.Key + " is accurate and locked");
+        CoachLog.Append($"spray {r.Key} acc={r.Accuracy:0}% early={r.Early:+0.00;-0.00} mid={r.Mid:+0.00;-0.00} late={r.Late:+0.00;-0.00} side={r.Sideways:+0.00;-0.00} clear={r.UsedIntervals}/{r.Intervals} {r.Seconds:0.0}s | {msg}");
         _live.AddLog("coach: " + Last + " | " + msg);
         Changed?.Invoke();
+    }
+
+    // ---- automatic calibration: pictures between two moments + your real mouse counts in between ------
+    System.Threading.Timer? _auto;
+    Frame? _acPrev; long _acPrevT; bool _acCapturing;
+    readonly List<double> _acY = new(), _acX = new();
+
+    public void StartAutoCalibration()
+    {
+        if (_auto != null) return;
+        _auto = new System.Threading.Timer(_ => { try { AutoCalTick(); } catch { } }, null, 3000, 300);
+    }
+
+    void AutoCalTick()
+    {
+        if (Calibrated || Raw == null || Grab == null || Calibrating || _recording || _busy || Why() != "")
+        {
+            _acPrev = null;
+            if (_acCapturing && !Calibrating) { _acCapturing = false; }
+            return;
+        }
+        var r = Region();
+        var f = Grab(r.X, r.Y, r.W, r.H);
+        if (f == null) return;
+        long now = Clock.Ms;
+        long dx = 0, dy = 0;
+        if (_acCapturing) (dx, dy) = Raw.EndCapture();
+        Raw.BeginCapture(); _acCapturing = true;
+        var prev = _acPrev; long prevT = _acPrevT;
+        _acPrev = f; _acPrevT = now;
+        if (prev == null || (Keys != null && Keys.ActivitySince(prevT - 100))) return;
+        if (Math.Abs(dx) < 40 && Math.Abs(dy) < 40) return;
+        var (sw, sh) = ScreenSize();
+        int mx = sw / 2 - r.X, my = sh / 2 - r.Y;
+        var m = ImageShift.Measure(ImageShift.Profile(prev, mx, my), ImageShift.Profile(f, mx, my), out _);
+        if (m == null) return;
+        if (m.Dy != null && Math.Abs(dy) >= 40 && Math.Abs(dy) > 2 * Math.Abs(dx) * 0.3)
+        { double q = Math.Abs(m.Dy.Value) / Math.Abs(dy); if (q is > 0.05 and < 3) lock (_acY) _acY.Add(q); }
+        if (m.Dx != null && Math.Abs(dx) >= 40)
+        { double q = Math.Abs(m.Dx.Value) / Math.Abs(dx); if (q is > 0.05 and < 3) lock (_acX) _acX.Add(q); }
+        int ny, nx; lock (_acY) ny = _acY.Count; lock (_acX) nx = _acX.Count;
+        AutoCalStatus = $"measuring from your mouse movement: vertical {Math.Min(ny, 10)}/10, horizontal {Math.Min(nx, 10)}/10";
+        if (ny >= 10 && (nx >= 10 || ny >= 25))
+        {
+            double Med(List<double> l) { lock (l) { var s = l.OrderBy(v => v).ToList(); return s[s.Count / 2]; } }
+            double py = Med(_acY), px = nx >= 10 ? Med(_acX) : py;
+            Post(() =>
+            {
+                C.Coach.PxY = Math.Round(py, 3); C.Coach.PxX = Math.Round(px, 3); _store.Touch();
+                if (_acCapturing) { Raw.EndCapture(); _acCapturing = false; }
+                Status = $"Calibrated automatically: vertical {C.Coach.PxY} px/count, horizontal {C.Coach.PxX}";
+                CoachLog.Append(Status);
+                SetNotice("COACH: calibrated by itself, learning is now active");
+                Changed?.Invoke();
+            });
+        }
     }
 
     // ---- pixels per mouse count (no injected input: you move the mouse yourself) -------------------

@@ -66,7 +66,9 @@ public partial class App : Application
             Hooks.ToggleTraining += () => Coach.SetTraining(!Coach.Training);
             Hooks.CalBegin += () => { var m = Coach.BeginCalibration(); Live.AddLog("calibration: " + (m == "" ? "started" : m)); };
             Hooks.CalFinish += () => Coach.FinishCalibration();
+            Hooks.CopyLog += () => _main.CopyLogNow();
             Hooks.Start();
+            Coach.StartAutoCalibration();
 
             if (Store.ImportedFromAhk) Live.AddLog("Imported your settings from the old AutoHotkey config");
             if (Store.LastError != "") Live.AddLog(Store.LastError);
