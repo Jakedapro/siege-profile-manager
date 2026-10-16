@@ -176,8 +176,8 @@ public partial class MainWindow
         C<TextBlock>("CoachStatus").Text = (eg.Guns >= 2 && cfg.Game.AutoPullGain ? $"Auto pull strength {eg.Gain:0.00} (learned from {eg.Guns} trained guns, applies to every untrained gun)\n" : "") + co.Status + (co.SkipSummary() != "" ? "\nnot used so far: " + co.SkipSummary() : "") + (co.Ignored > 0 ? $"\ntaps / hip-fire ignored: {co.Ignored}" : "");
         C<TextBlock>("PxText").Text = co.Calibrated
             ? $"vertical {cfg.Coach.PxY:0.000} px per count   ·   horizontal {cfg.Coach.PxX:0.000}   (calibrated)"
-            : "not calibrated yet. " + (co.AutoCalStatus != "" ? co.AutoCalStatus : "It measures itself: just look around with the mouse in game.");
-        C<TextBlock>("CalWarn").IsVisible = !co.Calibrated;
+            : $"estimated from your settings: {SPM.Core.Coach.CoachService.Estimate(cfg.Game, cfg.Game.SensV):0.000} px per count (works without calibrating; Calibrate now, aiming down sights, makes it exact)";
+        C<TextBlock>("CalWarn").IsVisible = false;
         C<Button>("CalGuidedBtn").IsEnabled = !co.GuidedRunning;
         C<TextBlock>("LastText").Text = co.Last;
         var r = co.LastResult;

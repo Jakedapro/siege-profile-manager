@@ -122,7 +122,7 @@ public static class CoachBook
     }
 
     /// <summary>Adds one spray. Returns a new learned profile when this spray completed a round, else null. msg = what happened.</summary>
-    public static LearnedProfile? Record(AppConfig c, SprayResult r, out string msg, int needed = Needed, double eta = Eta)
+    public static LearnedProfile? Record(AppConfig c, SprayResult r, out string msg, int needed = Needed, double eta = Eta, double trust = 1)
     {
         msg = "";
         var e = Entry(c, r.Key);
@@ -150,6 +150,7 @@ public static class CoachBook
         if (tooStrong) eta = Math.Max(eta, quick ? 0.75 : 0.8);
         else if (quick) eta = Math.Max(eta, 0.6);
         else if (rel1 > 0.25) eta = Math.Max(eta, 0.8);
+        eta *= trust;                                            // less sure of the pixel scale = smaller steps
 
         // LOCKED: under 4% error in every phase and tiny sideways drift = accurate, stop chasing noise
         double rel = Math.Max(Math.Abs(e.A / e.N) / Math.Max(e.Pa, 0.5), Math.Max(Math.Abs(e.B / e.N) / Math.Max(e.Pb, 0.5), Math.Abs(e.C / e.N) / Math.Max(e.Pc, 0.5)));

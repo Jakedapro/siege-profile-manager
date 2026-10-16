@@ -108,7 +108,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="SCREEN SCALE  (pixels the view moves per mouse count)" Classes="h" />
               <TextBlock Name="PxText" Foreground="#E9EDF3" TextWrapping="Wrap" />
-              <TextBlock Name="CalWarn" Foreground="#F2B84B" FontWeight="SemiBold" TextWrapping="Wrap" IsVisible="False" Text="⚠ Learning starts once this is calibrated. It measures itself while you look around in game, or press the button to do it right now." />
+              <TextBlock Name="CalWarn" Foreground="#F2B84B" FontWeight="SemiBold" TextWrapping="Wrap" IsVisible="False" Text="⚠ Optional." />
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button Name="CalGuidedBtn" Classes="primary" Content="Calibrate now  (6 s countdown)" />
                 <Button Name="CalBeginBtn" Classes="sec" Content="Manual: Start" />

@@ -68,7 +68,6 @@ public partial class App : Application
             Hooks.CalFinish += () => Coach.FinishCalibration();
             Hooks.CopyLog += () => _main.CopyLogNow();
             Hooks.Start();
-            Coach.StartAutoCalibration();
 
             if (Store.ImportedFromAhk) Live.AddLog("Imported your settings from the old AutoHotkey config");
             if (Store.LastError != "") Live.AddLog(Store.LastError);

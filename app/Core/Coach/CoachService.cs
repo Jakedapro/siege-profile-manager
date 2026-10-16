@@ -64,7 +64,7 @@ public sealed class CoachService
     public string Notice { get; private set; } = "";
     DateTime _noticeAt = DateTime.MinValue;
     public bool NoticeActive => Notice != "" && (DateTime.UtcNow - _noticeAt).TotalSeconds < 10;
-    public bool NeedsCalibration => InMatch && !Calibrated;
+    public bool NeedsCalibration => false;                       // calibration is optional now: the scale is estimated from your settings
     public bool GuidedRunning { get; private set; }
     public void Announce(string text) => SetNotice(text);
     void SetNotice(string text) { Notice = text; _noticeAt = DateTime.UtcNow; Changed?.Invoke(); }
@@ -80,8 +80,22 @@ public sealed class CoachService
     }
 
     AppConfig C => _store.Config;
-    double PxY => C.Coach.PxY > 0 ? C.Coach.PxY : 0.4;
-    double PxX => C.Coach.PxX > 0 ? C.Coach.PxX : 0.4;
+    double PxY => C.Coach.PxY > 0 ? C.Coach.PxY : Estimate(C.Game.SensV);
+    double PxX => C.Coach.PxX > 0 ? C.Coach.PxX : Estimate(C.Game.SensH);
+
+    /// <summary>
+    /// Screen pixels the view moves per mouse count, worked out from your own settings (no calibration needed):
+    /// degrees per count = 0.00572958 x sensitivity x ADS factor, pixels per degree at the screen centre from the vertical FOV and resolution.
+    /// Exact calibration (Coach page) replaces it and is only a refinement.
+    /// </summary>
+    public static double Estimate(GameSettings g, double sens)
+    {
+        double ads = g.Ads > 0 ? g.Ads / 100.0 : 1;
+        double degPerCount = 0.00572958 * Math.Max(sens, 0.1) * ads;
+        double pxPerDeg = (Math.Max(g.ResH, 480) / 2.0) / Math.Tan(Math.Clamp(g.Fov, 40, 120) * Math.PI / 360.0) * Math.PI / 180.0;
+        return Math.Round(degPerCount * pxPerDeg, 3);
+    }
+    double Estimate(double sens) => Estimate(C.Game, sens);
     public bool Calibrated => C.Coach.PxY > 0 && C.Coach.PxX > 0;
 
     public void SetTraining(bool on)
@@ -155,7 +169,6 @@ public sealed class CoachService
         var hand = Raw?.EndBurst() ?? new List<RawSample>();
         double ms = Num(p.Get("ms")); int ticks = (int)Num(p.Get("ticks")); double py = Num(p.Get("py"));
         if (py <= 0 || ticks < 20) { Ignored++; return; }          // a tap or hip-fire: nothing to learn from, and not worth a message
-        if (!Calibrated) { Skip("waiting for the pixels-per-count calibration (it measures itself while you look around in game)"); return; }
         if (Matching && ms < 450) { Skip("match mode needs a spray of at least half a second"); return; }
         if (Keys != null && Keys.ActivitySince(_burstStart - 150)) { Skip("you were moving, crouching or leaning during that spray"); return; }
         // the Lua's profile for this loadout, as it was when the burst ended
@@ -204,7 +217,6 @@ public sealed class CoachService
         string r = why.Length > 70 ? why[..70] : why;
         SkipReasons[r] = SkipReasons.TryGetValue(r, out var n) ? n + 1 : 1;
         CoachLog.Append("skip: " + why + "  [" + Key() + "]");
-        if (!Calibrated) { Changed?.Invoke(); return; }       // one clear banner on the Coach page instead of a message per spray
         Status = "last spray not used: " + why;               // the last measured result stays visible in LAST
         Changed?.Invoke();
     }
@@ -219,7 +231,8 @@ public sealed class CoachService
     {
         Measured++;
         LastResult = r;
-        var lp = Matching ? CoachBook.Record(C, r, out var msg, 3, 0.5) : CoachBook.Record(C, r, out msg);
+        double trust = Calibrated ? 1 : 0.7;                    // the scale is only estimated from your settings: smaller steps until you calibrate
+        var lp = Matching ? CoachBook.Record(C, r, out var msg, 3, 0.5, trust) : CoachBook.Record(C, r, out msg, CoachBook.Needed, CoachBook.Eta, trust);
         _store.Touch();
         Last = (Matching ? "match: " : "") + $"EARLY {CoachMath.Say(r.Early, r.Pa)}  ·  MID {CoachMath.Say(r.Mid, r.Pb)}  ·  LATE {CoachMath.Say(r.Late, r.Pc)}  ·  sideways "
              + (Math.Abs(r.Sideways) < 0.08 ? "ok" : "drifts " + (r.Sideways < 0 ? "RIGHT" : "LEFT"))

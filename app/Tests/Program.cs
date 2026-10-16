@@ -218,6 +218,14 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
     Check(SPM.Core.Derived.EffectiveGain(c5).Gain == 1.0, "auto strength can be switched off");
 }
 
+// ---- pixel scale is estimated from the settings, no calibration needed ----
+{
+    var g9 = new GameSettings { Dpi = 1600, SensH = 4, SensV = 4, Fov = 84, Ads = 52, ResW = 3440, ResH = 1440 };
+    double e = SPM.Core.Coach.CoachService.Estimate(g9, 4);
+    Check(e > 0.1 && e < 0.3, $"estimated px per count for 4 sens / FOV 84 / 1440p / ADS 52 is plausible ({e})");
+    Check(SPM.Core.Coach.CoachService.Estimate(g9, 8) > e * 1.9, "doubling the sensitivity doubles the estimate");
+}
+
 store.Dispose();
 Console.WriteLine(fails == 0 ? "ALL PASSED" : fails + " FAILED");
 return fails == 0 ? 0 : 1;
