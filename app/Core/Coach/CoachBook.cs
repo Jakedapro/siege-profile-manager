@@ -132,7 +132,7 @@ public static class CoachBook
             e.Sig = sig; e.N = 0; e.A = e.B = e.C = e.X = 0; e.Locked = false;
             e.Pa = r.Pa; e.Pb = r.Pb; e.Pc = r.Pc; e.Px = r.Px; e.T1 = r.T1; e.T2 = r.T2;
         }
-        if (e.BaseA < 0) { e.BaseA = r.Pa; e.BaseB = r.Pb; e.BaseC = r.Pc; e.BaseX = r.Px; }   // the first profile ever seen bounds all later ones
+        if (e.BaseA < 0) { e.BaseGain = c.Game.PullGain; e.BaseA = r.Pa; e.BaseB = r.Pb; e.BaseC = r.Pc; e.BaseX = r.Px; }   // the first profile ever seen bounds all later ones
         if (e.N >= 10) { e.A *= 0.6; e.B *= 0.6; e.C *= 0.6; e.X *= 0.6; e.N = 6; }       // keep learning: newer sprays count more than old ones
         e.N++;
         e.A += r.Early; e.B += r.Mid; e.C += r.Late; e.X += r.Sideways;

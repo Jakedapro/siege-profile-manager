@@ -81,6 +81,7 @@ public sealed class CoachEntry
     public double BaseB { get; set; }
     public double BaseC { get; set; }
     public double BaseX { get; set; }
+    public double BaseGain { get; set; } = 1.4;     // the pull strength that was active when the first profile was seen
     public List<int> Acc { get; set; } = new();
     public bool Locked { get; set; }
     public string Updated { get; set; } = "";
@@ -103,6 +104,7 @@ public sealed class GameSettings
     public double Ads { get; set; } = 52;
     /// <summary>Pull strength for every gun that has no learned profile (the Lua's vertGain).</summary>
     public double PullGain { get; set; } = 1.0;
+    public bool AutoPullGain { get; set; } = true;     // the app tunes the strength of untrained guns from the guns the coach has learned
     public int PullGainVersion { get; set; }          // 2 = the old 1.4 boost has been reset once
     public int ResW { get; set; } = 1920;
     public int ResH { get; set; } = 1080;

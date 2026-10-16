@@ -172,7 +172,8 @@ public partial class MainWindow
         _loading = true; C<CheckBox>("MatchChk").IsChecked = co.InMatch; _loading = false;
         C<Button>("TrainBtn").Content = co.Training ? "Pause learning  (F12)" : "Resume learning  (F12)";
         C<TextBlock>("TrainText").Text = co.Training ? "● ALWAYS LEARNING  ·  range and matches" : co.InMatch ? "○ range learning paused  ·  learning carefully in matches" : "○ paused";
-        C<TextBlock>("CoachStatus").Text = co.Status + (co.SkipSummary() != "" ? "\nnot used so far: " + co.SkipSummary() : "") + (co.Ignored > 0 ? $"\ntaps / hip-fire ignored: {co.Ignored}" : "");
+        var eg = SPM.Core.Derived.EffectiveGain(cfg);
+        C<TextBlock>("CoachStatus").Text = (eg.Guns >= 2 && cfg.Game.AutoPullGain ? $"Auto pull strength {eg.Gain:0.00} (learned from {eg.Guns} trained guns, applies to every untrained gun)\n" : "") + co.Status + (co.SkipSummary() != "" ? "\nnot used so far: " + co.SkipSummary() : "") + (co.Ignored > 0 ? $"\ntaps / hip-fire ignored: {co.Ignored}" : "");
         C<TextBlock>("PxText").Text = co.Calibrated
             ? $"vertical {cfg.Coach.PxY:0.000} px per count   ·   horizontal {cfg.Coach.PxX:0.000}   (calibrated)"
             : "not calibrated yet. " + (co.AutoCalStatus != "" ? co.AutoCalStatus : "It measures itself: just look around with the mouse in game.");

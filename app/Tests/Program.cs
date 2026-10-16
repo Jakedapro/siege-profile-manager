@@ -202,6 +202,22 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
     Check(lp4 != null && lp4.R < 8, $"one spray that over-pulls by ~30% already lowers the pull (r={lp4?.R}) {m4}");
 }
 
+// ---- smarter learning: trained guns tune the strength of untrained ones ----
+{
+    var c5 = new AppConfig(); c5.Game.PullGain = 1.0;
+    foreach (var k in new[] { "A:nil:nil", "B:nil:nil" })
+    {
+        c5.Learned[k] = new LearnedProfile { R = 7, Y1 = 1, Y2 = 1 };               // pulls 7 / 8 / 9
+        c5.Coach.Hist[k] = new CoachEntry { BaseA = 10, BaseB = 11.4, BaseC = 12.9, BaseGain = 1.0 };   // the estimate pulled ~30% more
+    }
+    var eg = SPM.Core.Derived.EffectiveGain(c5);
+    Check(eg.Guns == 2 && eg.Gain < 0.9 && eg.Gain > 0.75, $"two trained guns that needed ~70% pull the strength down to {eg.Gain:0.00}");
+    var c6 = new AppConfig(); c6.Game.PullGain = 1.0;
+    Check(SPM.Core.Derived.EffectiveGain(c6).Gain == 1.0, "with no trained guns the manual strength is used");
+    c5.Game.AutoPullGain = false;
+    Check(SPM.Core.Derived.EffectiveGain(c5).Gain == 1.0, "auto strength can be switched off");
+}
+
 store.Dispose();
 Console.WriteLine(fails == 0 ? "ALL PASSED" : fails + " FAILED");
 return fails == 0 ? 0 : 1;

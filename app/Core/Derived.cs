@@ -7,6 +7,29 @@ namespace SPM.Core;
 /// </summary>
 public static class Derived
 {
+    /// <summary>The learned guns say how strong the built-in estimates really need to be: each learned gun implies a strength
+    /// (how much it ended up pulling compared with what the estimate pulled), the median of those is blended in as more guns are learned.
+    /// An untrained gun therefore starts close to what your trained ones turned out to need instead of a fixed guess.</summary>
+    public static (double Gain, int Guns, double Implied) EffectiveGain(AppConfig c)
+    {
+        double manual = Math.Clamp(c.Game.PullGain, 0.3, 5);
+        var implied = new List<double>();
+        foreach (var kv in c.Learned)
+        {
+            if (!c.Coach.Hist.TryGetValue(kv.Key, out var h) || h.BaseA <= 0.3) continue;
+            var p = kv.Value;
+            double b0 = p.R, b1 = p.R + p.Y1, b2 = b1 + p.Y2;
+            double baseSum = h.BaseA + h.BaseB + h.BaseC;
+            if (baseSum <= 1) continue;
+            implied.Add(Math.Clamp(h.BaseGain * (b0 + b1 + b2) / baseSum, 0.4, 2.0));
+        }
+        if (!c.Game.AutoPullGain || implied.Count < 2) return (manual, implied.Count, 0);
+        implied.Sort();
+        double med = implied[implied.Count / 2];
+        double w = implied.Count / (implied.Count + 2.0);
+        return (Math.Round((manual * (1 - w) + med * w) / 0.05) * 0.05, implied.Count, med);
+    }
+
     static double Att(string barrel, string grip) => (grip == "VERTICAL" ? 0.8 : 1) * (barrel == "FLASH HIDER" ? 0.8 : 1);
     static string Norm(string s) => s is "" or "NONE" or "-" ? "nil" : s;
 

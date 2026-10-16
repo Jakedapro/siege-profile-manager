@@ -55,6 +55,7 @@ public partial class MainWindow : Window
         Check("AutoWriteChk", v => _app.Store.Config.AutoWriteLua = v);
         Check("HudChk", v => { _app.Store.Config.HudVisible = v; _app.ApplyHud(); });
         Check("SlotChk", v => _app.Store.Config.SlotSyncEnabled = v);
+        Check("AutoGainChk", v => _app.Store.Config.Game.AutoPullGain = v);
         Check("SlotAnyChk", v => _app.Store.Config.SlotSyncAnywhere = v);
 
         Closing += (_, e) => { e.Cancel = true; Hide(); };           // the app keeps running (HUD + link); F7 / tray icon reopens
@@ -87,6 +88,7 @@ public partial class MainWindow : Window
         C<CheckBox>("AutoWriteChk").IsChecked = c.AutoWriteLua;
         C<CheckBox>("HudChk").IsChecked = c.HudVisible;
         C<CheckBox>("SlotChk").IsChecked = c.SlotSyncEnabled;
+        C<CheckBox>("AutoGainChk").IsChecked = c.Game.AutoPullGain;
         C<CheckBox>("SlotAnyChk").IsChecked = c.SlotSyncAnywhere;
         _loading = false;
     }
