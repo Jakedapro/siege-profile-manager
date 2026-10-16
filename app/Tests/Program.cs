@@ -194,6 +194,14 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
     Check(lp != null, "after 20 perfect sprays, four bad ones still change the profile");
 }
 
+// ---- too strong is recognised after ONE spray ----
+{
+    var c4 = new AppConfig();
+    var strong = new SPM.Core.Coach.SprayResult { Key = "S:nil:nil", Early = -3, Mid = -3.5, Late = -4, Pa = 10, Pb = 12, Pc = 14, Px = 0, T1 = 450, T2 = 900, Accuracy = 60, UsedIntervals = 5, Intervals = 6 };
+    var lp4 = SPM.Core.Coach.CoachBook.Record(c4, strong, out var m4);
+    Check(lp4 != null && lp4.R < 8, $"one spray that over-pulls by ~30% already lowers the pull (r={lp4?.R}) {m4}");
+}
+
 store.Dispose();
 Console.WriteLine(fails == 0 ? "ALL PASSED" : fails + " FAILED");
 return fails == 0 ? 0 : 1;
