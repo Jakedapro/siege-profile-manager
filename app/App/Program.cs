@@ -16,10 +16,13 @@ internal static class Program
         try
         {
             try { ShowSignal = new EventWaitHandle(false, EventResetMode.AutoReset, "SiegeProfileManager.Show"); } catch (PlatformNotSupportedException) { }
-            _single = new Mutex(true, "SiegeProfileManager.SingleInstance", out bool first);
+            bool first;
+            try { _single = new Mutex(true, "SiegeProfileManager.SingleInstance", out first); }
+            catch (AbandonedMutexException) { _single = new Mutex(true, "SiegeProfileManager.SingleInstance", out first); }
             if (!first && args.Contains("--updated"))                  // the old version is still shutting down: wait for it
             {
-                first = _single.WaitOne(TimeSpan.FromSeconds(15));
+                try { first = _single.WaitOne(TimeSpan.FromSeconds(15)); }
+                catch (AbandonedMutexException) { first = true; }      // the old copy died without releasing it: we own it now
             }
             if (!first)
             {

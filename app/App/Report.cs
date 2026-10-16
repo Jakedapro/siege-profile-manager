@@ -43,7 +43,7 @@ public static class Report
         t.Append(Row("CALIBRATION GRIDS", string.Join(", ", cfg.Calibration.Keys.DefaultIfEmpty("none"))));
         t.Append(Row("COACH", (app.Coach.Training ? "ALWAYS LEARNING" : "training off") + $"  measured {app.Coach.Measured}, ignored taps {app.Coach.Ignored}, skipped {app.Coach.Skipped}"));
         if (app.Coach.SkipSummary() != "") t.Append(Row("  SKIP REASONS", app.Coach.SkipSummary()));
-        if (!app.Coach.Calibrated && app.Coach.AutoCalStatus != "") t.Append(Row("  AUTO CALIBRATION", app.Coach.AutoCalStatus));
+        if (!app.Coach.Calibrated) t.Append(Row("  AUTO CALIBRATION", app.Coach.AutoCalStatus == "" ? "no attempt yet (Siege must be the active window and the mouse moved)" : app.Coach.AutoCalStatus));
         { var eg = SPM.Core.Derived.EffectiveGain(cfg); t.Append(Row("  AUTO PULL STRENGTH", $"{eg.Gain:0.00} (manual {cfg.Game.PullGain:0.00}, {eg.Guns} learned guns, implied {eg.Implied:0.00}, auto {(cfg.Game.AutoPullGain ? "on" : "off")})")); }
         t.Append(Row("  LEARNED", string.Join(", ", cfg.Coach.Hist.OrderBy(k => k.Key).Select(k => $"{k.Key} n={k.Value.Acc.Count} last={(k.Value.Acc.Count > 0 ? k.Value.Acc[^1] : 0)}%{(k.Value.Locked ? " LOCKED" : "")}"))));
         t.Append(Row("  LAST", app.Coach.Last));

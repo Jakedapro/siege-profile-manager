@@ -243,10 +243,26 @@ public sealed class CoachService
         _auto = new System.Threading.Timer(_ => { try { AutoCalTick(); } catch { } }, null, 3000, 300);
     }
 
+    static bool Blank(Frame f) { for (int i = 0; i < f.Bgra.Length; i += 4099) if (f.Bgra[i] != 0) return false; return true; }
+    readonly Dictionary<string, int> _acWhy = new();
+    DateTime _acLogged = DateTime.MinValue;
+    void AcNote(string why)
+    {
+        lock (_acWhy) _acWhy[why] = _acWhy.TryGetValue(why, out var n) ? n + 1 : 1;
+        if ((DateTime.UtcNow - _acLogged).TotalSeconds < 45) return;
+        _acLogged = DateTime.UtcNow;
+        string s; lock (_acWhy) s = string.Join(", ", _acWhy.OrderByDescending(k => k.Value).Take(6).Select(k => $"{k.Key} x{k.Value}"));
+        AutoCalStatus = "not progressing: " + s;
+        CoachLog.Append("auto calibration not finished (vertical " + _acY.Count + ", horizontal " + _acX.Count + "): " + s);
+    }
+
     void AutoCalTick()
     {
-        if (Calibrated || Raw == null || Grab == null || Calibrating || _recording || _busy || Why() != "")
+        if (Calibrated || Raw == null || Grab == null || Calibrating || _recording || _busy) { _acPrev = null; return; }
+        string whyNot = Why();
+        if (whyNot != "")
         {
+            if (whyNot.StartsWith("no live")) AcNote("no data from G HUB"); else if (whyNot.Contains("not the active")) AcNote("Siege not the active window");
             _acPrev = null;
             if (_acCapturing && !Calibrating) { _acCapturing = false; }
             return;
@@ -260,12 +276,14 @@ public sealed class CoachService
         Raw.BeginCapture(); _acCapturing = true;
         var prev = _acPrev; long prevT = _acPrevT;
         _acPrev = f; _acPrevT = now;
-        if (prev == null || (Keys != null && Keys.ActivitySince(prevT - 100))) return;
-        if (Math.Abs(dx) < 40 && Math.Abs(dy) < 40) return;
+        if (Blank(f)) { AcNote("screen capture is black (use borderless/windowed mode)"); return; }
+        if (prev == null) return;
+        if (Keys != null && Keys.ActivitySince(prevT - 100)) { AcNote("movement keys down"); return; }
+        if (Math.Abs(dx) < 40 && Math.Abs(dy) < 40) { AcNote("mouse barely moved"); return; }
         var (sw, sh) = ScreenSize();
         int mx = sw / 2 - r.X, my = sh / 2 - r.Y;
         var m = ImageShift.Measure(ImageShift.Profile(prev, mx, my), ImageShift.Profile(f, mx, my), out _);
-        if (m == null) return;
+        if (m == null) { AcNote("pictures could not be matched"); return; }
         if (m.Dy != null && Math.Abs(dy) >= 40 && Math.Abs(dy) > 2 * Math.Abs(dx) * 0.3)
         { double q = Math.Abs(m.Dy.Value) / Math.Abs(dy); if (q is > 0.05 and < 3) lock (_acY) _acY.Add(q); }
         if (m.Dx != null && Math.Abs(dx) >= 40)
