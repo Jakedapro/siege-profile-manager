@@ -145,10 +145,10 @@ public static class CoachBook
         double srel = (e.A / e.N / Math.Max(e.Pa, 0.5) + e.B / e.N / Math.Max(e.Pb, 0.5) + e.C / e.N / Math.Max(e.Pc, 0.5)) / 3;
         bool tooStrong = srel < -0.10;
         // too strong is felt at once, so it is corrected after the first clear spray with a big step; too weak needs a bigger error first
-        bool quick = e.N < needed && r.UsedIntervals >= 3 && (tooStrong || srel > 0.3);
+        bool quick = e.N < needed && r.UsedIntervals >= 3 && (tooStrong || srel > 0.15);
         if (e.N < needed && !quick) { msg = $"{e.N} of {needed} sprays collected for this profile"; return null; }
         if (tooStrong) eta = Math.Max(eta, quick ? 0.75 : 0.8);
-        else if (quick) eta = Math.Min(eta, 0.4);
+        else if (quick) eta = Math.Max(eta, 0.6);
         else if (rel1 > 0.25) eta = Math.Max(eta, 0.8);
 
         // LOCKED: under 4% error in every phase and tiny sideways drift = accurate, stop chasing noise
