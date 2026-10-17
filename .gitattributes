@@ -1,3 +1,2 @@
 *.lua text eol=lf
-*.ahk text eol=lf
 *.md text eol=lf
