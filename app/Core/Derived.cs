@@ -17,6 +17,7 @@ public static class Derived
         foreach (var kv in c.Learned)
         {
             if (!c.Coach.Hist.TryGetValue(kv.Key, out var h) || h.BaseA <= 0.3) continue;
+            if (h.Acc.Count < 4 || h.Acc[^1] < 70) continue;                // only guns that were learned from several clean sprays count
             var p = kv.Value;
             double b0 = p.R, b1 = p.R + p.Y1, b2 = b1 + p.Y2;
             double baseSum = h.BaseA + h.BaseB + h.BaseC;

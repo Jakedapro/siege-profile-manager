@@ -208,7 +208,7 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
     foreach (var k in new[] { "A:NONE:NONE", "B:NONE:NONE" })
     {
         c5.Learned[k] = new LearnedProfile { R = 7, Y1 = 1, Y2 = 1 };               // pulls 7 / 8 / 9
-        c5.Coach.Hist[k] = new CoachEntry { BaseA = 10, BaseB = 11.4, BaseC = 12.9, BaseGain = 1.0 };   // the estimate pulled ~30% more
+        c5.Coach.Hist[k] = new CoachEntry { BaseA = 10, BaseB = 11.4, BaseC = 12.9, BaseGain = 1.0, Acc = new List<int> { 90, 92, 95, 96 } };   // the estimate pulled ~30% more
     }
     var eg = SPM.Core.Derived.EffectiveGain(c5);
     Check(eg.Guns == 2 && eg.Gain < 0.9 && eg.Gain > 0.75, $"two trained guns that needed ~70% pull the strength down to {eg.Gain:0.00}");

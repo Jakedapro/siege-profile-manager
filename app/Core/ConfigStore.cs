@@ -79,6 +79,14 @@ public sealed class ConfigStore : IDisposable
 
     void Normalize()
     {
+        if (Config.Coach.DataVersion < 2)
+        {
+            // everything learned so far used a pixel scale measured while NOT aiming (0.45 instead of ~0.17 when aiming down sights),
+            // and noisy short sprays: it is not trustworthy, so start clean. The scale is now estimated from your settings.
+            Config.Learned.Clear(); Config.Coach.Hist.Clear();
+            Config.Coach.PxY = 0; Config.Coach.PxX = 0;
+            Config.Coach.DataVersion = 2;
+        }
         if (Config.Game.PullGainVersion < 2) { Config.Game.PullGain = 1.0; Config.Game.PullGainVersion = 2; }     // guns without a learned profile were 40% too strong
         if (Config.Side != "defenders") Config.Side = "attackers";
         if (Config.Game.ResW < 640 || Config.Game.ResH < 480) { Config.Game.ResW = 1920; Config.Game.ResH = 1080; }
