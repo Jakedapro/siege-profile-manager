@@ -192,7 +192,7 @@ public sealed class CoachService
             try
             {
                 var list = frames.Select(f => (f.T, ImageShift.Profile(f.F, mx, my))).ToList();
-                var res = CoachMath.Analyze(list, burst, pulls, g, cy, cx, out var why, handSamples, Matching ? 3 : 2);
+                var res = CoachMath.Analyze(list, burst, pulls, g, cy, cx, out var why, handSamples, 3);
                 Post(() => { _busy = false; if (res == null) Skip(why); else Apply(res); });
             }
             catch (Exception e) { Post(() => { _busy = false; Skip("analysis failed: " + e.Message); }); }

@@ -47,7 +47,7 @@ public static class CoachMath
 
     /// <summary>Turns the pictures taken during one spray into the per-phase error. Null + reason when it cannot be judged.</summary>
     public static SprayResult? Analyze(IReadOnlyList<(long TimeMs, Prof? P)> frames, BurstInfo burst, Pulls pulls, GameSettings g,
-        double pxPerCountY, double pxPerCountX, out string why, IReadOnlyList<RawSample>? hand = null, int minClear = 2)
+        double pxPerCountY, double pxPerCountX, out string why, IReadOnlyList<RawSample>? hand = null, int minClear = 3)
     {
         why = "";
         int n = frames.Count;
@@ -83,9 +83,13 @@ public static class CoachMath
             if (tkY[ph] > 0)
             {
                 double mp = Math.Max(pull[ph], 0.5);
-                res[ph] = Clamp(sumY[ph] / Math.Max(pxPerCountY, 0.01) / tkY[ph] / sy, -0.5 * mp, 0.5 * mp);
+                double raw = sumY[ph] / Math.Max(pxPerCountY, 0.01) / tkY[ph] / sy;
+                if (Math.Abs(raw) >= 0.5 * mp) { why = "that spray measured an impossibly large error (a bad picture match), so it was thrown away instead of taught"; return null; }
+                res[ph] = raw;
             }
-        double mX = tkX > 0 ? Clamp(-(sumX / Math.Max(pxPerCountX, 0.01)) / tkX / sxs, -3, 3) : 0;
+        double mXraw = tkX > 0 ? -(sumX / Math.Max(pxPerCountX, 0.01)) / tkX / sxs : 0;
+        if (Math.Abs(mXraw) >= 3) { why = "that spray measured an impossibly large sideways error (a bad picture match), so it was thrown away instead of taught"; return null; }
+        double mX = mXraw;
         double wacc = 0, wsum = 0;
         for (int ph = 0; ph < 3; ph++)
             if (tkY[ph] > 0) { wacc += Math.Abs(res[ph]) / Math.Max(pull[ph], 0.5) * tkY[ph]; wsum += tkY[ph]; }
@@ -145,7 +149,7 @@ public static class CoachBook
         double srel = (e.A / e.N / Math.Max(e.Pa, 0.5) + e.B / e.N / Math.Max(e.Pb, 0.5) + e.C / e.N / Math.Max(e.Pc, 0.5)) / 3;
         bool tooStrong = srel < -0.10;
         // too strong is felt at once, so it is corrected after the first clear spray with a big step; too weak needs a bigger error first
-        bool quick = e.N < needed && r.UsedIntervals >= 3 && (tooStrong || srel > 0.15);
+        bool quick = e.N < needed && r.UsedIntervals >= 4 && (tooStrong || srel > 0.15);
         if (e.N < needed && !quick) { msg = $"{e.N} of {needed} sprays collected for this profile"; return null; }
         if (tooStrong) eta = Math.Max(eta, quick ? 0.75 : 0.8);
         else if (quick) eta = Math.Max(eta, 0.6);
