@@ -174,15 +174,15 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
 // ---- learning carries over to other attachments of the same weapon ----
 {
     var c2 = new AppConfig();
-    c2.Learned["SMG-12:nil:nil"] = new LearnedProfile { R = 10, Y1 = 2, Y2 = 1, Side = 0.3 };
+    c2.Learned["SMG-12:NONE:NONE"] = new LearnedProfile { R = 10, Y1 = 2, Y2 = 1, Side = 0.3 };
     var all = SPM.Core.Derived.All(c2).ToDictionary(k => k.Key, k => k.Value);
-    Check(all.ContainsKey("SMG-12:nil:nil") && all["SMG-12:nil:nil"].R == 10, "own learned profile is kept as it is");
-    Check(all.ContainsKey("SMG-12:nil:VERTICAL") && Math.Abs(all["SMG-12:nil:VERTICAL"].R - 8) < 0.01, $"vertical grip derives from it x0.8 ({all.GetValueOrDefault("SMG-12:nil:VERTICAL")?.R})");
-    c2.Learned["SMG-12:nil:VERTICAL"] = new LearnedProfile { R = 7 };
+    Check(all.ContainsKey("SMG-12:NONE:NONE") && all["SMG-12:NONE:NONE"].R == 10, "own learned profile is kept as it is");
+    Check(all.ContainsKey("SMG-12:NONE:VERTICAL") && Math.Abs(all["SMG-12:NONE:VERTICAL"].R - 8) < 0.01, $"vertical grip derives from it x0.8 ({all.GetValueOrDefault("SMG-12:NONE:VERTICAL")?.R})");
+    c2.Learned["SMG-12:NONE:VERTICAL"] = new LearnedProfile { R = 7 };
     var all2 = SPM.Core.Derived.All(c2).ToDictionary(k => k.Key, k => k.Value);
-    Check(all2["SMG-12:nil:VERTICAL"].R == 7, "a combination with its own learning is not overwritten");
+    Check(all2["SMG-12:NONE:VERTICAL"].R == 7, "a combination with its own learning is not overwritten");
     string blockText = SPM.Core.LuaBlock.Build(c2, "r1");
-    Check(blockText.Contains("[\"SMG-12:nil:nil\"]"), "derived and learned keys are written to the Lua block");
+    Check(blockText.Contains("[\"SMG-12:NONE:NONE\"]"), "derived and learned keys are written to the Lua block");
 }
 // ---- recent sprays count more: a long-locked profile reacts to a new error ----
 {
@@ -205,7 +205,7 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
 // ---- smarter learning: trained guns tune the strength of untrained ones ----
 {
     var c5 = new AppConfig(); c5.Game.PullGain = 1.0;
-    foreach (var k in new[] { "A:nil:nil", "B:nil:nil" })
+    foreach (var k in new[] { "A:NONE:NONE", "B:NONE:NONE" })
     {
         c5.Learned[k] = new LearnedProfile { R = 7, Y1 = 1, Y2 = 1 };               // pulls 7 / 8 / 9
         c5.Coach.Hist[k] = new CoachEntry { BaseA = 10, BaseB = 11.4, BaseC = 12.9, BaseGain = 1.0 };   // the estimate pulled ~30% more

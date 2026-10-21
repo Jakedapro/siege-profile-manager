@@ -31,7 +31,8 @@ public static class Derived
     }
 
     static double Att(string barrel, string grip) => (grip == "VERTICAL" ? 0.8 : 1) * (barrel == "FLASH HIDER" ? 0.8 : 1);
-    static string Norm(string s) => s is "" or "NONE" or "-" ? "nil" : s;
+    // the Lua stores "no attachment" as the string NONE (never nil), so its keys read WEAPON:NONE:NONE
+    static string Norm(string s) => s is "" or "-" ? "NONE" : s;
 
     public static IEnumerable<KeyValuePair<string, LearnedProfile>> All(AppConfig c)
     {
@@ -41,8 +42,8 @@ public static class Derived
         {
             var info = GameData.Weapon(g.Key);
             if (info == null) continue;
-            var barrels = info.Barrels.Select(Norm).Append("nil").Distinct().ToList();
-            var grips = info.Grips.Select(Norm).Append("nil").Distinct().ToList();
+            var barrels = info.Barrels.Select(Norm).Append("NONE").Distinct().ToList();
+            var grips = info.Grips.Select(Norm).Append("NONE").Distinct().ToList();
             foreach (var b in barrels)
                 foreach (var gr in grips)
                 {
