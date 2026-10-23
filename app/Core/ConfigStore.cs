@@ -92,6 +92,12 @@ public sealed class ConfigStore : IDisposable
             Config.Coach.PxY = 0.4; Config.Coach.PxX = 0.4;          // as requested: the coach's pixel scale starts at 0.4 (Settings → Coach pixels per count; 0 = estimate)
             Config.Coach.DataVersion = 3;
         }
+        if (Config.Coach.DataVersion < 4)
+        {
+            // back to "worked out from your settings" (Settings -> Coach pixels per count = 0): 1600 dpi, sens 3 / 3, ADS 35, FOV 84, 1440p -> 0.084
+            Config.Coach.PxY = 0; Config.Coach.PxX = 0;
+            Config.Coach.DataVersion = 4;
+        }
         if (Config.Game.PullGainVersion < 2) { Config.Game.PullGain = 1.0; Config.Game.PullGainVersion = 2; }     // guns without a learned profile were 40% too strong
         if (Config.Side != "defenders") Config.Side = "attackers";
         if (Config.Game.ResW < 640 || Config.Game.ResH < 480) { Config.Game.ResW = 1920; Config.Game.ResH = 1080; }
