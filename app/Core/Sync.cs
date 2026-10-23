@@ -51,6 +51,7 @@ public sealed class SyncService
         if (!_live.HasData) return SyncState.Unknown;
         var rev = _live.Get("cfgrev", "none");
         if (rev == "none") return SyncState.NoBlock;
+        if (rev == NewRev()) return SyncState.Ok;               // G HUB already runs exactly this config
         if (rev != C.CopiedRev) return SyncState.Old;
         return Pending ? SyncState.Pending : SyncState.Ok;
     }
@@ -226,7 +227,8 @@ public sealed class SyncService
         return null;
     }
 
-    static string NewRev() => DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+    /// <summary>The revision IS the content: the same config always has the same rev, so restarting the app does not make the pasted script look old.</summary>
+    string NewRev() => "h" + LuaBlock.ContentHash(C);
 
     /// <summary>The complete script with your config merged in, also saved as the merged file. Marks the config as handed over.</summary>
     public string? BuildFullScript(out string error)
@@ -260,8 +262,7 @@ public sealed class SyncService
             File.Move(tmp, LivePath, true);
             _lastLiveBody = body;
             LiveWriteTime = DateTime.Now;
-            C.CopiedRev = rev;
-            Rebase();
+            if (_live.Get("live") == "ok") { C.CopiedRev = rev; Rebase(); }      // only "handed over" when G HUB really loads the file
         }
         catch (Exception ex) { LastError = "live file: " + ex.Message; }
     }

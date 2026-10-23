@@ -57,6 +57,11 @@ if (args.Length > 0 && File.Exists(args[0]))
     Check(sync.State() == SyncState.Ok, "in sync once G HUB reports the copied rev");
     store.Config.Favorites.Add("Rook");
     Check(sync.Pending && sync.State() == SyncState.Pending, "a config change makes it pending");
+    // restarting the app must not make an identical pasted config look old
+    store.Config.Favorites.Remove("Rook");
+    store.Config.CopiedRev = "somethingelse";
+    live2.Ingest("SPMSTATE#4|protocol=2|session=S1|operator=LESION|side=DEFENDER|primary=T-5 SMG|cfgrev=h" + LuaBlock.ContentHash(store.Config) + "|end=1\n");
+    Check(sync.State() == SyncState.Ok, "the same config content is in sync after an app restart (rev = content)");
 }
 
 
