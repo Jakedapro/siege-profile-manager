@@ -47,6 +47,7 @@ public partial class MainWindow : Window
         Hook(C<NumericUpDown>("FovBox"), v => _app.Store.Config.Game.Fov = v);
         Hook(C<NumericUpDown>("AdsBox"), v => _app.Store.Config.Game.Ads = v);
         Hook(C<NumericUpDown>("PullBox"), v => _app.Store.Config.Game.PullGain = v);
+        Hook(C<NumericUpDown>("PxBox"), v => { _app.Store.Config.Coach.PxY = v; _app.Store.Config.Coach.PxX = v; });      // 0 = estimate from settings
         Hook(C<NumericUpDown>("ResWBox"), v => _app.Store.Config.Game.ResW = (int)v);
         Hook(C<NumericUpDown>("ResHBox"), v => _app.Store.Config.Game.ResH = (int)v);
         barrel.SelectionChanged += (_, _) => { if (!_loading && barrel.SelectedItem is string s) { _app.Store.Config.Prefs.Barrel = s; _app.Store.Touch(); } };
@@ -80,6 +81,7 @@ public partial class MainWindow : Window
         C<NumericUpDown>("FovBox").Value = (decimal)c.Game.Fov;
         C<NumericUpDown>("AdsBox").Value = (decimal)c.Game.Ads;
         C<NumericUpDown>("PullBox").Value = (decimal)c.Game.PullGain;
+        C<NumericUpDown>("PxBox").Value = (decimal)c.Coach.PxY;
         C<NumericUpDown>("ResWBox").Value = c.Game.ResW;
         C<NumericUpDown>("ResHBox").Value = c.Game.ResH;
         C<ComboBox>("BarrelBox").SelectedItem = c.Prefs.Barrel;
