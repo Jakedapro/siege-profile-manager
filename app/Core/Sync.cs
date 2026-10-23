@@ -20,6 +20,9 @@ public sealed class SyncService
     AppConfig C => _store.Config;
     public string MergedPath => Path.Combine(_store.Dir, "siege_profile_manager.merged.lua");
     public string LivePath => Path.Combine(_store.Dir, "spm_live.lua");
+    /// <summary>The whole bundled script (config merged in). G HUB scripts from 3.9 on load it by themselves when its version is newer.</summary>
+    public string CodePath => Path.Combine(_store.Dir, "spm_script.lua");
+    string _lastCode = "";
     public DateTime LiveWriteTime { get; private set; } = DateTime.MinValue;
     string _lastLiveBody = "";
 
@@ -201,8 +204,12 @@ public sealed class SyncService
         var want = ExpectedLuaVersion();
         if (want == "") return "";
         var have = _live.Get("luaver", "");
-        return have == want ? "" : (have == "" ? "G HUB is running an OLD script (no version). " : $"G HUB is running script {have}, this app has {want}. ")
-            + "Press Copy script and paste it into G HUB.";
+        if (have == want) return "";
+        bool liveOk = _live.Get("live") == "ok";
+        if (liveOk && _live.Get("selfupd") == "1")
+            return $"G HUB is updating its script {have} -> {want} by itself on your next click or key press. If it stays like this, press Copy script and paste it.";
+        return (have == "" ? "G HUB is running an OLD script (no version). " : $"G HUB is running script {have}, this app has {want}. ")
+            + (liveOk ? "Press Copy script and paste it into G HUB ONE last time: from script 3.9 on it updates itself." : "Press Copy script and paste it into G HUB.");
     }
 
     string? BaseScript(out string error)
@@ -256,7 +263,8 @@ public sealed class SyncService
             var body = LuaBlock.Build(C, "0");
             if (!force && body == _lastLiveBody && File.Exists(LivePath)) return;
             var rev = NewRev();
-            var text = LuaBlock.BuildLive(C, rev);
+            var code = WriteCode(rev);                          // before the live file, so it never names a missing script
+            var text = LuaBlock.BuildLive(C, rev, code ? ExpectedLuaVersion() : "", code ? CodePath : "");
             var tmp = LivePath + ".tmp";
             File.WriteAllText(tmp, text, new UTF8Encoding(false));
             File.Move(tmp, LivePath, true);
@@ -265,6 +273,25 @@ public sealed class SyncService
             if (_live.Get("live") == "ok") { C.CopiedRev = rev; Rebase(); }      // only "handed over" when G HUB really loads the file
         }
         catch (Exception ex) { LastError = "live file: " + ex.Message; }
+    }
+
+    /// <summary>Writes the bundled script (config merged in) for self-updating G HUB scripts. False when there is none to offer.</summary>
+    bool WriteCode(string rev)
+    {
+        try
+        {
+            var bundled = BundledScript?.Invoke();
+            if (string.IsNullOrEmpty(bundled)) return false;
+            if (_lastCode == bundled && File.Exists(CodePath)) return true;        // the config inside only matters until the live file loads
+            var merged = LuaBlock.Merge(bundled, C, rev, out var err);
+            if (merged == null) { LastError = "script file: " + err; return false; }
+            var tmp = CodePath + ".tmp";
+            File.WriteAllText(tmp, merged, new UTF8Encoding(false));
+            File.Move(tmp, CodePath, true);
+            _lastCode = bundled;
+            return true;
+        }
+        catch (Exception ex) { LastError = "script file: " + ex.Message; return false; }
     }
 
     /// <summary>After every config save: keep the SPM_USER block inside the Lua file on disk current (only when it really changed).</summary>

@@ -231,6 +231,24 @@ SPM.Core.Coach.Frame MakeFrame(int w, int h, int dx, int dy)
     Check(SPM.Core.Coach.CoachService.Estimate(g9, 8) > e * 1.9, "doubling the sensitivity doubles the estimate");
 }
 
+// ---- self update: the live file names the app's script and the file holding it ----
+{
+    var dir = Path.Combine(Path.GetTempPath(), "spm-test-" + Guid.NewGuid().ToString("N"));
+    var st = new ConfigStore(dir);
+    st.Load();
+    var lv = new LiveState();
+    var sy = new SyncService(st, lv) { BundledScript = () => "local SPM_LUA_VERSION = \"9.9\"\n-- >>> SPM_USER BEGIN\nlocal SPM_USER = nil\n-- <<< SPM_USER END <<<\nfunction OnEvent() end\n" };
+    sy.WriteLive(true);
+    var liveText = File.ReadAllText(sy.LivePath);
+    Check(liveText.Contains("luaver = \"9.9\"") && liveText.Contains("code = " + LuaBlock.Q(sy.CodePath)), "live file names the bundled script version and file");
+    Check(File.Exists(sy.CodePath) && File.ReadAllText(sy.CodePath).Contains("local SPM_USER = {") && File.ReadAllText(sy.CodePath).Contains("function OnEvent"), "script file written with the config merged in");
+    lv.Ingest("SPMSTATE#1|protocol=2|session=Q|luaver=3.9|live=ok|selfupd=1|cfgrev=none|end=1\n");
+    Check(sy.LuaVersionProblem().Contains("by itself"), "self-updating script: no paste asked");
+    lv.Ingest("SPMSTATE#2|protocol=2|session=Q|luaver=3.8|live=ok|cfgrev=none|end=1\n");
+    Check(sy.LuaVersionProblem().Contains("ONE last time"), "older script: one last paste");
+    st.Dispose();
+}
+
 store.Dispose();
 Console.WriteLine(fails == 0 ? "ALL PASSED" : fails + " FAILED");
 return fails == 0 ? 0 : 1;
